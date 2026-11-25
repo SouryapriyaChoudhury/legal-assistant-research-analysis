@@ -11,6 +11,18 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 # Load environment variables from backend/.env regardless of the shell's cwd.
 load_dotenv(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env"))
 
+# Streamlit Cloud has no .env file. Copy dashboard secrets into the environment
+# before the agents import and require the keys.
+for _key in ("GROQ_API_KEY", "TAVILY_API_KEY"):
+    if os.getenv(_key):
+        continue
+    try:
+        _value = st.secrets[_key]
+    except Exception:
+        _value = None
+    if _value:
+        os.environ[_key] = str(_value)
+
 # Import the route_query function
 from agent.router import route_query
 

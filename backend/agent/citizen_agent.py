@@ -25,7 +25,7 @@ TAVILY_API_KEY = os.getenv("TAVILY_API_KEY")
 
 if not TAVILY_API_KEY or not GROQ_API_KEY:
     raise ValueError(
-        "API keys for Tavily and Grok are not set. Please add them to your .env file."
+        "GROQ_API_KEY and TAVILY_API_KEY are not set. Add them to backend/.env locally, or to the Streamlit app secrets."
     )
 
 MAX_RESEARCH_CYCLES = 1
