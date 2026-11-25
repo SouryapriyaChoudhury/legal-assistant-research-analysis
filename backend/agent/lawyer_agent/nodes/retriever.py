@@ -1,30 +1,16 @@
 import os
-from pathlib import Path
-from langchain_community.vectorstores import FAISS
-from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_tavily import TavilySearch
-from langchain_core.documents import Document
-from typing import List
 
+from legal_rag.retrieval import format_search_results, get_faiss_db
 from ..state import LawyerAgentState
 
 
 def legal_database_search(query: str) -> str:
-    """Search FAISS for a query, return content string."""
+    """Search the shared FAISS index and return a content string."""
     try:
-        FAISS_INDEX_PATH = "data/faiss_index"
-        embedding_model = HuggingFaceEmbeddings(
-            model_name="sentence-transformers/all-MiniLM-L6-v2"
-        )
-        db = FAISS.load_local(
-            FAISS_INDEX_PATH, embedding_model, allow_dangerous_deserialization=True
-        )
-
+        db = get_faiss_db()
         retrieved_docs = db.similarity_search_with_score(query, k=5)
-        content = ""
-        for doc, score in retrieved_docs:
-            content += doc.page_content + "\n\n"
-        return content
+        return "\n\n".join(doc.page_content for doc, _score in retrieved_docs)
     except Exception as e:
         return f"Error during legal database search: {e}"
 
@@ -37,10 +23,7 @@ def web_search(query: str) -> str:
 
     web_search_tool = TavilySearch(max_results=5, tavily_api_key=tavily_api_key)
     results = web_search_tool.invoke(query)
-    content = ""
-    for result in results:
-        content += result + "\n\n"
-    return content
+    return format_search_results(results)
 
 
 def retriever(state: LawyerAgentState) -> dict:

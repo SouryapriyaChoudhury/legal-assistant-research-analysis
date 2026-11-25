@@ -13,18 +13,15 @@ EMBEDDING_MODEL = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
 
 
 def get_llm():
-    groq_api_key = os.getenv("GROQ_API_KEY")
-    if not groq_api_key:
-        raise ValueError("GROQ_API_KEY environment variable not set.")
-    return ChatGroq(
-        model="llama-3.1-8b-instant", temperature=0.2, groq_api_key=groq_api_key
-    )
+    from legal_rag.llm import get_llm as build_llm
+
+    return build_llm(max_tokens=200)
 
 
 def safe_invoke(llm, prompt, vars):
-    chain = prompt | llm
-    result = chain.invoke(vars)
-    return getattr(result, "content", str(result))
+    from legal_rag.llm import invoke_text
+
+    return invoke_text(llm, prompt, vars)
 
 
 def critic(state: LawyerAgentState) -> dict:
@@ -72,7 +69,7 @@ Output only a number between 0.0 and 1.0:""",
     else:
         sim_score = 0.5
 
-    # Combined score
-    final_score = (llm_score + sim_score) / 2
+    # 60% legal review, 40% calibrated semantic similarity.
+    final_score = (0.6 * llm_score) + (0.4 * sim_score)
 
     return {"answer_score": final_score, "iterations": 1}

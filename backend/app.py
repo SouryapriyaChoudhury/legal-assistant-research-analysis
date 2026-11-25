@@ -1,6 +1,9 @@
-import uuid
+import asyncio
+from pathlib import Path
+
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 # --- Import your agent router ---
@@ -78,8 +81,19 @@ class SaveThreadRequest(BaseModel):
 # 4. API ENDPOINTS
 # ============================
 
+FRONTEND_DIST = Path(__file__).resolve().parent.parent / "frontend" / "dist"
+
+
+@app.get("/health")
+def health():
+    return {"message": "LARA backend is running."}
+
+
 @app.get("/")
 def read_root():
+    index = FRONTEND_DIST / "index.html"
+    if index.is_file():
+        return FileResponse(index)
     return {"message": "LARA backend is running."}
 
 
@@ -89,10 +103,11 @@ async def process_legal_query(request: QueryRequest):
     Main endpoint called by frontend
     """
     try:
-        result = route_query(
-            role=request.role,
-            user_query=request.user_query,
-            thread_id=request.thread_id,
+        result = await asyncio.to_thread(
+            route_query,
+            request.role,
+            request.user_query,
+            request.thread_id,
         )
 
         final_analysis = result.get(
@@ -153,6 +168,28 @@ async def delete_thread_endpoint(thread_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+def _frontend_file(full_path: str) -> Path | None:
+    if not full_path or not FRONTEND_DIST.is_dir():
+        return None
+    root = FRONTEND_DIST.resolve()
+    candidate = (FRONTEND_DIST / full_path).resolve()
+    if root not in candidate.parents or not candidate.is_file():
+        return None
+    return candidate
+
+
+@app.get("/{full_path:path}", include_in_schema=False)
+def frontend_app(full_path: str):
+    """Serve the built React app when frontend/dist is present."""
+    asset = _frontend_file(full_path)
+    if asset is not None:
+        return FileResponse(asset)
+    index = FRONTEND_DIST / "index.html"
+    if index.is_file():
+        return FileResponse(index)
+    raise HTTPException(status_code=404, detail="Not found")
+
+
 # ============================
 # 5. LOCAL SERVER ENTRY POINT
 # ============================
@@ -164,4 +201,5 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=8000,
         reload=True,
+        reload_dirs=[str(Path(__file__).resolve().parent)],
     )

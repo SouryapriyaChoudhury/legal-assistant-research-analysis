@@ -1,1 +1,62 @@
 @import "tailwindcss";
+
+@theme {
+  --font-sans: "Outfit", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Fraunces", Georgia, "Times New Roman", serif;
+  --color-ink: #171b22;
+  --color-pine: #16352f;
+  --color-pine-deep: #0e2420;
+  --color-brass: #9a7344;
+  --color-brass-soft: #c4a574;
+  --color-paper: #f3eee4;
+  --color-card: #fffdf8;
+  --color-line: #e4d9c8;
+  --color-clay: #8c3b32;
+  --color-mist: #6d655b;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: #e7d3ae;
+  color: var(--color-ink);
+}
+
+.paper-grid {
+  background-image:
+    radial-gradient(ellipse 80% 50% at 100% -10%, rgba(154, 115, 68, 0.18), transparent 50%),
+    radial-gradient(ellipse 50% 40% at -10% 20%, rgba(22, 53, 47, 0.08), transparent 45%);
+}
+
+.analysis-body p {
+  margin: 0 0 0.85rem;
+}
+
+.analysis-body p:last-child {
+  margin-bottom: 0;
+}
+
+.analysis-body ul {
+  margin: 0 0 0.85rem;
+  padding-left: 1.15rem;
+}
+
+.analysis-body li {
+  margin: 0.25rem 0;
+}
+
+.analysis-body strong {
+  font-weight: 650;
+}

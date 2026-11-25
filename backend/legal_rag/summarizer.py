@@ -55,19 +55,16 @@ class AgentState(TypedDict):
 # ------------------------------
 def get_llm():
     """Initialize Groq LLM with env key."""
-    groq_api_key = os.getenv("GROQ_API_KEY")
-    if not groq_api_key:
-        raise ValueError("GROQ_API_KEY environment variable not set.")
-    return ChatGroq(
-        model="llama-3.1-8b-instant", temperature=0.2, groq_api_key=groq_api_key
-    )
+    from legal_rag.llm import get_llm as build_llm
+
+    return build_llm()
 
 
 def safe_invoke(llm, prompt, vars):
     """Run a prompt safely and return text content."""
-    chain = prompt | llm
-    result = chain.invoke(vars)
-    return getattr(result, "content", str(result))
+    from legal_rag.llm import invoke_text
+
+    return invoke_text(llm, prompt, vars)
 
 
 def chunk_text(text: str, chunk_size: int = CHUNK_SIZE, max_chunks: int = MAX_CHUNKS):
@@ -90,7 +87,7 @@ def summarize_long_text(text: str, label: str, query: str) -> str:
 
     # ✅ Fast mode: just trim input
     if FAST_MODE:
-        trimmed = " ".join(text.split()[:2000])
+        trimmed = " ".join(text.split()[:700])
         prompt = PromptTemplate(
             template=f"""Summarize the following {label} (<200 words), focusing on acts, sections, judgments.
 

@@ -29,11 +29,9 @@ def rewrite_query(state: AgentState) -> dict:
     query = state["query"]
     role = state.get("role", "Common Citizen")  # <-- Use the new role field
 
-    llm = ChatGroq(
-        model="llama-3.1-8b-instant",
-        temperature=0.2,
-        groq_api_key=os.getenv("GROQ_API_KEY"),
-    )
+    from legal_rag.llm import get_llm, invoke_with_retry
+
+    llm = get_llm(max_tokens=300)
 
     if role == "Lawyer":
         # Prompt specifically for lawyers seeking precedents and arguments
@@ -68,7 +66,7 @@ JSON Output:
 
     try:
         rewriter_chain = rewrite_prompt | llm | JsonOutputParser()
-        rewritten_query = rewriter_chain.invoke({"query": query})
+        rewritten_query = invoke_with_retry(rewriter_chain, {"query": query})
     except Exception as e:
         print(f"JSON parsing failed, using raw string. Error: {e}")
 
@@ -77,7 +75,7 @@ JSON Output:
             PromptTemplate(template="{query}", input_variables=["query"]) | llm
         )
 
-        rewritten_text = raw_text_chain.invoke({"query": query})
+        rewritten_text = invoke_with_retry(raw_text_chain, {"query": query})
 
         # Ensure the output is a string before putting it in the dictionary
         rewritten_query = {"rewritten_query": str(rewritten_text.content)}

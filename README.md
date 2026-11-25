@@ -75,11 +75,11 @@ Final Answer + Calibrated Confidence Score
 | **Backend Framework** | FastAPI (Python 3.11) |
 | **Agent Orchestration** | LangGraph (StateGraph with MemorySaver) |
 | **Lawyer Agent Nodes** | Issue Extractor, Planner, Retriever, Drafter, Critic, Finalizer |
-| **Embeddings + Vector DB** | FAISS Vector Store (`sentence-transformers/paraphrase-MiniLM-L3-v2`) |
-| **Language Model** | Groq (LLaMA 3.1–8B Instant) |
+| **Embeddings + Vector DB** | FAISS Vector Store (`sentence-transformers/all-MiniLM-L6-v2`) |
+| **Language Model** | Groq (`openai/gpt-oss-20b`) |
 | **Web Search API** | Tavily Search API |
 | **In-line Evaluation** | Hybrid Model (60% LLM-as-a-Judge + 40% Calibrated Cosine Similarity) |
-| **Frontend** | React + Vite + Tailwind CSS + Clerk Auth |
+| **Frontend** | React + Vite + Tailwind CSS |
 | **Standalone UI** | Streamlit |
 
 ---
@@ -178,7 +178,7 @@ Or run standalone Streamlit Interface:
 streamlit run backend/streamlit_app.py
 ```
 
-### 3. Frontend Setup (Optional React UI)
+### 3. Frontend Setup (React UI)
 ```bash
 cd frontend
 npm install
@@ -187,16 +187,17 @@ npm install
 cp .env.example .env
 ```
 
-Add keys in `frontend/.env`:
+`frontend/.env` only needs the API address:
 ```env
-VITE_CLERK_PUBLISHABLE_KEY=your_clerk_key
 VITE_API_BASE_URL=http://localhost:8000
 ```
 
-Start Vite Dev Server:
+Start the Vite dev server:
 ```bash
 npm run dev
 ```
+
+Open [http://localhost:5173](http://localhost:5173). Choose Citizen or Lawyer mode, then ask a question. Chat history is stored for a local browser profile, so no separate auth key is required. The FastAPI server must already be running on port 8000.
 
 ---
 

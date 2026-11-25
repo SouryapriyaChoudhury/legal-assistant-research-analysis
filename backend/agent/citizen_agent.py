@@ -28,7 +28,7 @@ if not TAVILY_API_KEY or not GROQ_API_KEY:
         "API keys for Tavily and Grok are not set. Please add them to your .env file."
     )
 
-MAX_RESEARCH_CYCLES = 3
+MAX_RESEARCH_CYCLES = 1
 
 # --- State Management with LangGraph ---
 class AgentState(TypedDict):

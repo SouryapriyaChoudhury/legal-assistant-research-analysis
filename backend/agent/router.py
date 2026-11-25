@@ -1,9 +1,13 @@
+from pathlib import Path
+
 from dotenv import load_dotenv
+
+# Load backend/.env before the agents import and validate keys.
+load_dotenv(Path(__file__).resolve().parent.parent / ".env")
+
 from agent.citizen_agent import app as citizen_app
 from agent.lawyer_agent import lawyer_app as lawyer_app
-from db import save_message, get_thread_messages
-
-load_dotenv()
+from db import get_thread_messages
 
 
 # --- Routing Logic ---
@@ -55,15 +59,5 @@ def route_query(role: str, user_query: str, thread_id: str):
         result = citizen_app.invoke(
             input_state, config={"configurable": {"thread_id": thread_id}, "recursion_limit": 50}
         )
-
-    # Save messages to database after processing
-    from db import save_message
-    for message in result.get('chat_history', []):
-      save_message(
-        thread_id,
-        message.get("role") or message.get("type", "assistant"),  # fallback
-        message.get("content", "")
-    )
-
 
     return result

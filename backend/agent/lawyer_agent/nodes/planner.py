@@ -10,18 +10,24 @@ load_dotenv()
 
 
 def get_llm():
-    groq_api_key = os.getenv("GROQ_API_KEY")
-    if not groq_api_key:
-        raise ValueError("GROQ_API_KEY environment variable not set.")
-    return ChatGroq(
-        model="llama-3.1-8b-instant", temperature=0.2, groq_api_key=groq_api_key
-    )
+    from legal_rag.llm import get_llm as build_llm
+
+    return build_llm(max_tokens=400)
+
+
+def _strip_json_fence(text: str) -> str:
+    cleaned = text.strip().replace("```json", "").replace("```JSON", "").replace("```", "").strip()
+    list_start = cleaned.find("[")
+    list_end = cleaned.rfind("]")
+    if list_start != -1 and list_end > list_start:
+        return cleaned[list_start:list_end + 1]
+    return cleaned
 
 
 def safe_invoke(llm, prompt, vars):
-    chain = prompt | llm
-    result = chain.invoke(vars)
-    return getattr(result, "content", str(result))
+    from legal_rag.llm import invoke_text
+
+    return invoke_text(llm, prompt, vars)
 
 
 def planner(state: LawyerAgentState) -> dict:
@@ -63,7 +69,7 @@ Sub-queries:""",
     )
 
     try:
-        sub_queries = json.loads(response)
+        sub_queries = json.loads(_strip_json_fence(response))
         if not isinstance(sub_queries, list):
             sub_queries = [response]
     except json.JSONDecodeError:

@@ -29,8 +29,9 @@ _faiss_db = None
 def get_embedding_model():
     global _embedding_model
     if _embedding_model is None:
+        # Must match the model that built backend/data/faiss_index.
         _embedding_model = HuggingFaceEmbeddings(
-            model_name="sentence-transformers/paraphrase-MiniLM-L3-v2"  # smaller model
+            model_name="sentence-transformers/all-MiniLM-L6-v2"
         )
     return _embedding_model
 
@@ -38,13 +39,41 @@ def get_embedding_model():
 def get_faiss_db():
     global _faiss_db
     if _faiss_db is None:
-        FAISS_INDEX_PATH = "data/faiss_index"
+        faiss_index_path = backend_dir / "data" / "faiss_index"
         _faiss_db = FAISS.load_local(
-            FAISS_INDEX_PATH,
+            str(faiss_index_path),
             get_embedding_model(),
             allow_dangerous_deserialization=True,
         )
     return _faiss_db
+
+
+def format_search_results(results) -> str:
+    """Normalize Tavily payloads (string, dict, or list) into plain text."""
+    if results is None:
+        return ""
+    if isinstance(results, str):
+        return results.strip()
+    if isinstance(results, dict):
+        nested = results.get("results")
+        results = nested if isinstance(nested, list) else [results]
+    if not isinstance(results, list):
+        return str(results)
+
+    parts = []
+    for item in results:
+        if isinstance(item, str):
+            text = item.strip()
+        elif isinstance(item, dict):
+            title = item.get("title") or ""
+            body = item.get("content") or item.get("snippet") or item.get("raw_content") or ""
+            url = item.get("url") or ""
+            text = "\n".join(piece for piece in (title, body, url) if piece)
+        else:
+            text = str(item).strip()
+        if text:
+            parts.append(text)
+    return "\n\n".join(parts)
 
 
 # -------------------------
@@ -115,10 +144,9 @@ def perform_research(state: AgentState) -> dict:
         if doc.metadata:
             sources.append({"type": "document", "metadata": doc.metadata})
 
-    web_content = ""
-    for result in web_results:
-        web_content += result + "\n\n"
-        sources.append({"type": "web", "content": result})
+    web_content = format_search_results(web_results)
+    if web_content:
+        sources.append({"type": "web", "content": web_content[:1000]})
 
     print("---RESEARCH COMPLETE---")
 

@@ -10,18 +10,24 @@ load_dotenv()
 
 
 def get_llm():
-    groq_api_key = os.getenv("GROQ_API_KEY")
-    if not groq_api_key:
-        raise ValueError("GROQ_API_KEY environment variable not set.")
-    return ChatGroq(
-        model="llama-3.1-8b-instant", temperature=0.2, groq_api_key=groq_api_key
-    )
+    from legal_rag.llm import get_llm as build_llm
+
+    return build_llm(max_tokens=400)
+
+
+def _strip_json_fence(text: str) -> str:
+    cleaned = text.strip().replace("```json", "").replace("```JSON", "").replace("```", "").strip()
+    object_start = cleaned.find("{")
+    object_end = cleaned.rfind("}")
+    if object_start != -1 and object_end > object_start:
+        return cleaned[object_start:object_end + 1]
+    return cleaned
 
 
 def safe_invoke(llm, prompt, vars):
-    chain = prompt | llm
-    result = chain.invoke(vars)
-    return getattr(result, "content", str(result))
+    from legal_rag.llm import invoke_text
+
+    return invoke_text(llm, prompt, vars)
 
 
 def issue_extractor(state: LawyerAgentState) -> dict:
@@ -51,7 +57,7 @@ Output:""",
     response = safe_invoke(llm, prompt, {"query": query})
 
     try:
-        data = json.loads(response)
+        data = json.loads(_strip_json_fence(response))
         issues = data.get("issues", [])
         facts = data.get("facts", [])
     except json.JSONDecodeError:
